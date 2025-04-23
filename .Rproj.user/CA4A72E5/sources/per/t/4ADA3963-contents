@@ -1,0 +1,122 @@
+rm(list=ls())
+setwd("/Users/michaelkuhn/Library/CloudStorage/OneDrive-UniversityOfOregon/Work/Teaching/Econ 525/class_425_525/examples/reg_review3")
+
+library(tidyverse)
+library(stargazer)
+library(coefplot)
+library(broom)
+library(systemfit)
+library(lmtest)
+library(sandwich)
+library(car)
+
+# Read in data
+housing_data <- read.csv("housing_data.csv")
+
+# Estimate OLS regression, summarize results 
+lm_dis <- lm(MEDV ~ DIS, data = housing_data)
+stargazer(lm_dis, type = "text")
+
+# Estimate more OLS regressions, summarize results 
+lm_tax <- lm(MEDV ~ DIS + TAX, data = housing_data)
+lm_nox <- lm(MEDV ~ DIS + TAX + NOX, data = housing_data) 
+lm_ses <- lm(MEDV ~ DIS + TAX + NOX + LSTAT, data = housing_data)
+stargazer(lm_dis, lm_tax, lm_nox, lm_ses, type = "text", df = FALSE)
+
+# Standardize explanatory variables for comparison
+housing_data$DIS_std <- scale(housing_data$DIS)
+housing_data$TAX_std <- scale(housing_data$TAX)
+housing_data$NOX_std <- scale(housing_data$NOX)
+housing_data$LSTAT_std <- scale(housing_data$LSTAT)
+
+#Estimate model with standardized variables
+lm_ses_std <- lm(MEDV ~ DIS_std + TAX_std + NOX_std + LSTAT_std, data = housing_data)
+
+# Coefficient plot comparing estimates within the previous model
+coefplot(lm_ses_std, 
+         intercept = FALSE,
+         xlab = "Estimate and 95% CI",
+         ylab = "Explanatory Variable",
+         title = NULL,
+         innerCI = 0,
+         outerCI = 1.96,
+         pointSize = 3,
+         color = "black",
+         zeroColor = "black",
+         zeroLWD = 0.5,
+         decreasing = TRUE)
+
+# Collect and tidy models, limit to just DIS coefficient
+model_list <- list(lm_dis, lm_tax, lm_nox, lm_ses)
+tidy_models <- lapply(model_list, tidy)
+for (i in 1:length(tidy_models)) {
+  tidy_models[[i]]$model <- paste("Model", i)
+}
+coef_df <- do.call(rbind, tidy_models)
+coef_df_dis <- coef_df[coef_df$term == "DIS", ]
+
+# Rename models for figure
+coef_df_dis <- coef_df_dis %>%
+  mutate(model = dplyr::recode(model,
+                        "Model 1" = "DIS only",
+                        "Model 2" = "+TAX",
+                        "Model 3" = "+NOX",
+                        "Model 4" = "+LSTAT"))
+
+# Make a factor variable to override alphabetical order
+coef_df_dis$model <- factor(coef_df_dis$model, levels = c("DIS only", "+TAX", "+NOX", "+LSTAT"))
+
+# Coefficient plot comparing estimates of DIS coefficient across models
+ggplot(coef_df_dis, 
+       aes(x = model, 
+           y = estimate)) +
+  geom_point(size = 3) + 
+  geom_errorbar(aes(ymin = estimate - std.error, ymax = estimate + std.error), width = 0.2) +
+  labs(x = "Model", y = "DIS Coefficient Estimate and 95% CI") + 
+  theme(axis.text.x = element_text(hjust = 0.5),
+        legend.position = "none") +
+  geom_hline(yintercept = 0, linetype = "dashed")
+
+# Simultaneously estimate two models for hypothesis test
+eq_nox <- MEDV ~ DIS + TAX + NOX
+eq_ses <- MEDV ~ DIS + TAX + NOX + LSTAT
+eq_system <- list(eq_nox, eq_ses)
+lm_system <- systemfit(eq_system, 
+                       data = housing_data,
+                       method = "SUR")
+linearHypothesis(lm_system, c("eq1_DIS = eq2_DIS"))
+
+# Scatter plot with linear prediction and 95% CI
+housing_data %>% 
+  ggplot(aes(x = DIS, y = MEDV)) + 
+  geom_point() + 
+  geom_smooth(method = "lm")
+
+# Make higher-order distance terms
+housing_data <- housing_data %>% 
+  mutate(DIS_2 = DIS^2, DIS_3 = DIS^3, DIS_4 = DIS^4)
+
+# Estimate quartic model
+lm_dis_man <- lm(MEDV ~ DIS + DIS_2 + DIS_3 + DIS_4, data = housing_data)
+
+# Scatter plot with quartic prediction
+housing_data %>% 
+  ggplot(aes(x = DIS, y = MEDV)) + 
+  geom_point() + 
+  geom_line(aes(y = lm_dis_man$fitted.values), color = "firebrick", 
+    linewidth = 2)
+
+# Create bins for binscatter
+housing_data <- housing_data %>% 
+  mutate(dist_bin = cut(DIS, breaks = 
+    quantile(DIS, probs = seq(0, 1, by = 0.1), na.rm = TRUE)))
+
+# Bin scatter plot
+housing_data %>% 
+  group_by(dist_bin) %>% 
+  summarise(DIS = mean(DIS), MEDV = mean(MEDV)) %>% 
+  ggplot(aes(x = DIS, y = MEDV)) +
+  geom_point(color = "firebrick", size = 2, alpha = 1)
+
+
+

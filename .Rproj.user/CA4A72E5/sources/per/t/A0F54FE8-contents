@@ -1,0 +1,90 @@
+rm(list=ls())
+setwd("/Users/michaelkuhn/Library/CloudStorage/OneDrive-UniversityOfOregon/Work/Teaching/Econ 525/class_425_525/examples/reg_review2")
+
+library(tidyverse)
+
+# Read in data
+orig_svcg <- read.csv("cleaned_fmac.csv")
+
+# Create new dataset with only first records
+loan_data <- orig_svcg %>% 
+  filter(first_record == TRUE)
+
+# Scatter plot with linear fit and 95% CI
+loan_data %>% 
+  ggplot(aes(x = fico, y = int_rt)) +
+  geom_point(colour = "firebrick", size = 2, alpha = 1/5) +
+  geom_smooth(method = "lm")
+
+# Defines bins for binscatter
+loan_data <- loan_data %>% 
+  mutate(fico_bin = cut(fico, breaks = 
+    quantile(fico, probs = seq(0, 1, by = 0.05), na.rm = TRUE)))
+
+# Is the fico_bin variable a factor variable?
+is.factor(loan_data$fico_bin)
+
+# Tabulate the number of observations in each fico_bin group
+table(loan_data$fico_bin)
+
+# Binscatter plot with linear fit 
+loan_data %>% 
+  group_by(fico_bin) %>% 
+  summarise(fico = mean(fico), int_rt = mean(int_rt)) %>% 
+  ggplot(aes(x = fico, y = int_rt)) +
+  geom_point(color = "firebrick", size = 2, alpha = 1) +
+  geom_smooth(method = "lm", se = FALSE)
+
+# Estimate OLS regression with regular data
+lm(int_rt ~ fico, data = loan_data)
+
+# Estimate OLS regression with binned data
+loan_data_bin <- loan_data %>% 
+  group_by(fico_bin) %>% 
+  summarise(fico = mean(fico), int_rt = mean(int_rt)) 
+lm(int_rt ~ fico, data = loan_data_bin)
+
+# Binscatter plot with linear and quadratic fit 
+loan_data %>% 
+  group_by(fico_bin) %>% 
+  summarise(fico = mean(fico), int_rt = mean(int_rt)) %>% 
+  ggplot(aes(x = fico, y = int_rt)) +
+    geom_point(color = "firebrick", size = 2, alpha = 1) +
+    geom_smooth(method = "lm", se = FALSE) +
+    geom_smooth(method = "lm", se = FALSE, formula = y ~ poly(x,2), 
+      linetype = "dashed")
+
+# Estimate intercept-only OLS regression and summarize results
+lm_1 <- lm(int_rt ~ 1, data = loan_data)
+summary(lm_1)
+
+# Compute sample mean for comparison
+mean(loan_data$int_rt)
+
+# Formally check they're the same
+all.equal(lm_1$coefficients, mean(loan_data$int_rt), check.names = FALSE) %>% 
+  stopifnot()
+
+# Scatter plot and predicted values from intercept-only regression
+loan_data %>% 
+  ggplot(aes(x = fico, y = int_rt)) +
+  geom_point(na.rm = TRUE) + 
+  geom_line(aes(y = lm_1$fitted.values), color = "red", linewidth = 1.5, 
+    na.rm = TRUE)
+
+# Estimate bin factor variable OLS regression without intercept and summarize results
+#   R knows fico_bin is a factor variable based on how it was created
+lm_bin_0 <- lm(int_rt ~ 0 + fico_bin, data = loan_data)
+summary(lm_bin_0)
+
+# Scatter plot and predicted values from factor variable regression
+loan_data %>% 
+  filter(!is.na(fico_bin)) %>% 
+    ggplot(aes(x = fico, y = int_rt)) +
+    geom_point(na.rm = TRUE) + 
+    geom_line(aes(y = lm_bin_0$fitted.values), color = "red", linewidth = 1.5, 
+    na.rm = TRUE)
+
+# Estimate bin factor variable OLS regression and summarize results
+lm_bin_1 <- lm(int_rt ~ 1 + fico_bin, data = loan_data)
+summary(lm_bin_1)

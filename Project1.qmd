@@ -1,0 +1,69 @@
+---
+title: "EC 525 Project 1"
+subtitle: "Oregon Health Plan"
+author: "Tom Ben-Shahar"
+date: "`r Sys.Date()`"
+format: 
+  html:
+    css: ../../custom.css
+    embed-resources: true
+editor: visual
+---
+
+```{r balance_table}
+#| echo: false
+#| results: 'asis'
+#| warning: false
+#| cache: true
+
+pacman::p_load(tidyverse, magrittr, tableone, stargazer, fixest, sandwich, modelsummary, gtsummary)
+
+ohp <- read.csv("ohp.csv")
+
+# Balance Table
+
+pre_survey_vars <- c("age_inp", 
+    "dep_dx_pre_lottery", 
+    "dia_dx_pre_lottery",
+    "edu_inp",
+    "hbp_dx_pre_lottery",
+    "hispanic_inp",
+    "numhh_list",
+    "race_black_inp",
+    "race_white_inp")
+
+models <- lapply(pre_survey_vars, function(var) {
+  feols(as.formula(paste(var, "~ treatment")), data = ohp, vcov = "hetero")
+})
+names(models) <- pre_survey_vars
+
+modelsummary(models,
+             
+  title = "Balance Table",
+  output = "html",
+  shape = model ~ term ,
+  stars = TRUE
+)
+
+
+```
+
+
+```{r compliance}
+#| echo: false
+#| warning: false
+#| results: 'asis'
+#| cache: true
+
+
+comp <- lm(data = ohp, ohp_all_ever_survey ~ treatment)
+se_comp <- sqrt(diag(vcovHC(comp)))
+
+stargazer(
+  comp,
+  se = se_comp,
+  type = "html"
+)
+
+```
+

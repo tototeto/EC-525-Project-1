@@ -1,0 +1,99 @@
+---
+title: "Randomized Experiments"
+author: "Tom Ben-Shahar"
+date: "November 15, 2024"
+output:
+  pdf_document: default
+  html_document: default
+
+---
+
+__Directions__ Write your solutions in Rmarkdown and submit your solutions as a rendered HTML or PDF file. Only (sufficiently well done) HTML or PDF submissions will be counted as complete. Install packages in your R console and only load them in your markdown file. Installing packages in your markdown file will create an error. 
+
+# 1. Bias in Resume Screening
+
+In class, we briefly discussed the challenge of using experiments to ask important questions where the "treatment" of interest is difficult to randomize. For example, is there gender or racial discrimination in hiring? How could we run an experiment to test this given that we cannot randomize an individuals gender or race?
+
+In "Are Emily and Greg More Employable Than Lakisha and Jamal? A Field Experiment on Labor Market Discrimination" Bertrand and Mullainathan (2004) solve this challenge by randomizing resume characteristics rather than individuals. Specifically, they generated fake resumes and randomly varied whether the name was identifiable as belonging to a man or a woman or a black or white person. They measure gender and racial discrimination by looking at the treatment effect of gender and race on call back rates.
+
+The data is in the file __BertrandMullainathan2004.csv__. The treatment variables are defined by the sex and race variables. The main outcome of interest is the variable call which equals 1 if someone received a call back.
+
+
+a. Is there evidence of  racial discrimination in resume screening in the data? (This answer should be based on an estimated causal effect.)
+
+
+```{r, results='asis', warning=FALSE}
+library(pacman)
+p_load(readr,dplyr,broom,sandwich,stargazer)
+bert <- read.csv("BertrandMullainathan2004.csv")
+bert <- bert %>% 
+  mutate(
+    race = ifelse(race == "b", 1, 0)
+  )
+r1 <- lm(call ~ race, bert)
+se1 <- sqrt(diag(vcovHC(r1)))
+
+stargazer(r1,
+se = se1,
+keep.stat=c("n","rsq"),
+model.numbers = FALSE,
+dep.var.labels=c("Call Back"),
+type = 'latex', style = 'qje', 
+covariate.labels = c("Race")
+)
+
+```
+
+Strangely, I do not see statistically significant evidence of racial bias in the data.
+
+b. Is the amount of racial bias the same for men and women?
+
+```{r, warning=FALSE, results='asis'}
+bert <- bert %>% 
+  mutate(
+    sex = ifelse(sex=="f", 1, 0)
+  )
+
+r2 <- lm(call ~ race +sex+ race*sex, bert)
+se2 <- sqrt(diag(vcovHC(r2)))
+
+stargazer(r2,
+se = se2,
+keep.stat=c("n","rsq"),
+model.numbers = FALSE,
+dep.var.labels=c("Call Back"),
+type = 'latex', style = 'qje', 
+covariate.labels = c("Race", "Sex", "Race*Sex"))
+
+```
+
+While it seems that there is a slightly stronger bias against black women than black men, the effect is not significant.
+
+c. The data includes a number of other resume characteristics. These are the baseline covariates in the data. These include the variables: education, ofjobs, yearsexp, honors, volunteer, military, empholes,  workinschool, email, computerskills, and specificskills. Pick 5 of these characteristics and discuss whether they are balanced across race categories.
+
+```{r, warning=FALSE, results='asis'}
+# Put R Code Here
+
+```
+
+d. How do the estimates from part a change if you control for these baseline characteristics when estimating the impact of race and gender on call back rates?
+
+```{r}
+# Put R Code Here
+
+```
+
+
+e. Look at the names used in the data for the resumes in each of the 4 gender/race categories. Could potential employers be inferring anything besides race and gender from the names? If so, how does this change your interpreation of the results?
+
+
+```{r}
+# Put R Code Here
+
+```
+
+
+# 2. Impact of Dogs on Health
+
+On several occasions, we have discussed the correlation between dog ownership and health. Propose a randomized experiment to test this. How might individuals in your experiment feel about your randomization? Could this create problems?
+

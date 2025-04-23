@@ -1,0 +1,37 @@
+---
+title: "Yachats Expenses"
+author: "Tom Ben-Shahar"
+date: "`r Sys.Date()`"
+format: 
+  html:
+    css: custom.css
+    embed-resources: true
+editor: visual
+---
+
+Below is a table showing each of our expenses, the category of the expense, and the dollar amount. This is followed by a brief summary.
+
+```{r}
+#| warning: false
+#| echo: false
+
+y <- read.csv("y.csv")
+
+library(tidyverse, magrittr)
+
+tibble(y)
+
+y %<>%
+  mutate(Cost = as.numeric(Cost)) %>% 
+  group_by(Type) %>% 
+  summarise(tot_c = sum(Cost))
+
+for (i in 1:4) {
+  cat("Total Expenses for ", y$Type[i], ": $", y$tot_c[i], "\n")
+} 
+
+cat("Total Overall: ", sum(y$tot_c))
+
+cat("Total for just Food/Hotel: ", y$tot_c[1] + y$tot_c[2])
+
+```

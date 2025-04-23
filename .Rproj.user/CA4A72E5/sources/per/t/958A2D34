@@ -1,0 +1,28 @@
+{
+    "id": "958A2D34",
+    "path": null,
+    "project_path": null,
+    "type": "object_explorer",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1745354704370.0,
+    "source_on_save": false,
+    "relative_order": 7,
+    "properties": {
+        "id": "33847f80448446a09ccb31ad8580363d",
+        "name": "itt_system",
+        "title": "itt_system",
+        "language": "R",
+        "source_window_id": "",
+        "Source": "Source"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 7358945710528946547,
+    "encoding": "",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1745354704370,
+    "read_only": false,
+    "read_only_alternatives": []
+}
