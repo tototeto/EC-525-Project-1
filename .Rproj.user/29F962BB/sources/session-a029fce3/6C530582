@@ -1,0 +1,28 @@
+{
+    "id": "6C530582",
+    "path": null,
+    "project_path": null,
+    "type": "object_explorer",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1745381210424.0,
+    "source_on_save": false,
+    "relative_order": 2,
+    "properties": {
+        "id": "c82af0dee52a4a8fb5178e2c3027e4cf",
+        "name": "models_norm",
+        "title": "models_norm",
+        "language": "R",
+        "source_window_id": "",
+        "Source": "Source"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 2228190694913,
+    "encoding": "",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1745381210424,
+    "read_only": false,
+    "read_only_alternatives": []
+}
